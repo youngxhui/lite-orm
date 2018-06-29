@@ -2,6 +2,7 @@ import annotation.PrimaryKey
 import entity.TableInfo
 import table.CreateTable
 import util.JDBCUtils
+import wu.seal.jvm.kotlinreflecttools.changePropertyValue
 import wu.seal.jvm.kotlinreflecttools.getPropertyValue
 import java.util.regex.Pattern
 
@@ -42,9 +43,7 @@ open class LiteOrmSupport {
         for (f in fields) {
             val annotationPresent = f.isAnnotationPresent(PrimaryKey::class.java)
             if (annotationPresent) {
-
                 val annotation = f.getAnnotation(PrimaryKey::class.java)
-                println(annotation)
                 val matches = Pattern.matches("@annotation.PrimaryKey\\(\\)", annotation.toString())
                 if (matches) {
                     primaryKey = f.toString().substringAfterLast(".")
@@ -84,6 +83,7 @@ open class LiteOrmSupport {
                 val type = fields[i].type.name.substringAfterLast(".")
                 val index = i + 1
                 val value = this.getPropertyValue(fields[i].toString().substringAfterLast(".")).toString()
+                //todo 完成其他类型转换
                 when (type) {
                     "String" -> ps.setString(index, value)
 
@@ -109,7 +109,10 @@ open class LiteOrmSupport {
 
     }
 
-    fun findOne() {
+    /**
+     * 查找当前id的值
+     */
+    fun findOne(): LiteOrmSupport {
 
         var primaryKey = "id"
 
@@ -130,21 +133,46 @@ open class LiteOrmSupport {
         for (f in fields) {
             val annotationPresent = f.isAnnotationPresent(PrimaryKey::class.java)
             if (annotationPresent) {
-
                 val annotation = f.getAnnotation(PrimaryKey::class.java)
-                println(annotation)
                 val matches = Pattern.matches("@annotation.PrimaryKey\\(\\)", annotation.toString())
                 if (matches) {
                     primaryKey = f.toString().substringAfterLast(".")
                 }
             }
         }
-        println(primaryKey)
 
-        println(this.getPropertyValue(primaryKey))
-        var sql = StringBuffer("select * from $tableName where id = ?")
+        val id = this.getPropertyValue(primaryKey).toString()
+        val sql = StringBuffer("select ")
+        for (f in fields) {
+            sql.append(f.toString().substringAfterLast(".") + ",")
+        }
+        sql.deleteCharAt(sql.length - 1).append(" from $tableName where $primaryKey = ?")
 
+        val connection = JDBCUtils.getConnection()
+        val ps = connection.prepareStatement(sql.toString())
+        ps.setInt(1, id.toInt())
+        val rs = ps.executeQuery()
+        while (rs.next()) {
+            for (i in 0 until fields.size) {
+                val property = rs.metaData.getColumnLabel(i + 1)
+                val columnType = rs.metaData.getColumnTypeName(i + 1)
+                when (columnType) {
+                    "INT" -> {
+                        val value = rs.getInt(property)
+                        this.changePropertyValue(property, value)
+                    }
+                    "VARCHAR" -> {
+                        val value = rs.getString(property)
+                        this.changePropertyValue(property, value)
+                    }
+                    //todo 完成其他类型转换
+                }
 
+            }
+        }
+
+        JDBCUtils.closeConnection()
+        return this
     }
 
 }

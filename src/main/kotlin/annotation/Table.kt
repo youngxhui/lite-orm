@@ -5,14 +5,14 @@ package annotation
  */
 
 /**
- *
+ * 表名注解
  */
 @Repeatable
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
 annotation class Entity(val name: String)
 
 /**
- *
+ * 主键注解
  */
 @Repeatable
 @Target(AnnotationTarget.FIELD)
