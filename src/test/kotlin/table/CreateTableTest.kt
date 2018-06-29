@@ -3,7 +3,6 @@ package table
 import entity.Person
 import entity.TableInfo
 import org.junit.Test
-import java.lang.reflect.Field
 
 /**
  * @author 杨晓辉 2018-06-29 21:00

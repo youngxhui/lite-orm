@@ -12,11 +12,11 @@ class TestLiteOrmSupport {
     private var animal = Animal()
 
     init {
-//        person.id = 26
+
         person.name = "张三"
         person.age = "18"
         person.sex = "男"
-
+        person.ids = 1
         animal.id = 1
         animal.type = "dog"
 
@@ -28,6 +28,10 @@ class TestLiteOrmSupport {
     }
 
 
+    @Test
+    fun testFindOne(){
+        person.findOne()
+    }
 }
 
 

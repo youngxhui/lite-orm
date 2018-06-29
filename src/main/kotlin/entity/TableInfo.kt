@@ -10,9 +10,7 @@ class TableInfo {
     /**
      * 构造器
      */
-    constructor() {
-
-    }
+    constructor()
 
     /**
      * @param tableName 表名
@@ -41,5 +39,6 @@ class TableInfo {
      * 默认主键为id
      */
     var primaryKey: String = "id"
+
 
 }
