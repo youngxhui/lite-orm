@@ -9,42 +9,33 @@ import org.junit.Test
 class TestLiteOrmSupport {
 
     private var person = Person()
-    private var animal = Animal()
 
     init {
 
         person.name = "张三"
         person.age = "18"
         person.sex = "男"
-        person.ids = 27
-        animal.id = 1
-        animal.type = "dog"
-
+        person.ids = 1
     }
 
     @Test
     fun testSave() {
-        person.save()
+        val save = person.save()
+        println(save)
     }
 
 
     @Test
-    fun testFindOne(){
+    fun testFindOne() {
         val one = person.findOne()
         println(one)
+    }
+
+    @Test
+    fun testFind() {
+        val person = LiteOrmSupport.find(Person::class.java, 1)
+        println(person.toString())
     }
 }
 
 
-
-class Animal() : LiteOrmSupport() {
-    var id: Int = 0
-    lateinit var type: String
-    var age: Long = 1
-    var float: Float = 0f
-    var double: Double = 0.0
-    var char: Char = '1'
-    var byte: Byte = 2
-    var num: Number = 9
-
-}

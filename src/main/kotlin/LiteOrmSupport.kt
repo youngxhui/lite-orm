@@ -13,6 +13,7 @@ import java.util.regex.Pattern
 open class LiteOrmSupport {
 
     /**
+     * @since 1.0
      * 将类进行保存
      * **案例**
      * ```
@@ -67,6 +68,7 @@ open class LiteOrmSupport {
         for (i in 0 until fields.size - 1) {
             sql.append(fields[i].toString().substringAfterLast(".") + ",")
         }
+
         sql.append(fields[fields.size - 1].toString().substringAfterLast(".") + ") values (")
         for (i in 0 until fields.size - 1) {
             sql.append("?,")
@@ -100,6 +102,7 @@ open class LiteOrmSupport {
 
             }
         }
+
         val row = ps.executeUpdate()
         JDBCUtils.closeConnection()
         return row != 0
@@ -110,25 +113,12 @@ open class LiteOrmSupport {
     }
 
     /**
-     * 查找当前id的值
+     * 通过id查找class
+     * @since 1.0
      */
     fun findOne(): LiteOrmSupport {
 
         var primaryKey = "id"
-
-        // 获取数据库
-        var tableName = this::class.simpleName!!
-        val isClassAnnotation = this::class.java.isAnnotation
-        if (!isClassAnnotation) {
-            val annotations = this::class.annotations
-            for (annotation in annotations) {
-                val matches = Pattern.matches("@annotation\\.Entity?.*", annotation.toString())
-                if (matches) {
-                    tableName = annotation.toString().substringBeforeLast(")").substringAfterLast("=")
-                }
-            }
-        }
-
         val fields = this::class.java.declaredFields
         for (f in fields) {
             val annotationPresent = f.isAnnotationPresent(PrimaryKey::class.java)
@@ -142,37 +132,67 @@ open class LiteOrmSupport {
         }
 
         val id = this.getPropertyValue(primaryKey).toString()
-        val sql = StringBuffer("select ")
-        for (f in fields) {
-            sql.append(f.toString().substringAfterLast(".") + ",")
-        }
-        sql.deleteCharAt(sql.length - 1).append(" from $tableName where $primaryKey = ?")
+        return find(this::class.java, id.toInt())
+    }
 
-        val connection = JDBCUtils.getConnection()
-        val ps = connection.prepareStatement(sql.toString())
-        ps.setInt(1, id.toInt())
-        val rs = ps.executeQuery()
-        while (rs.next()) {
-            for (i in 0 until fields.size) {
-                val property = rs.metaData.getColumnLabel(i + 1)
-                val columnType = rs.metaData.getColumnTypeName(i + 1)
-                when (columnType) {
-                    "INT" -> {
-                        val value = rs.getInt(property)
-                        this.changePropertyValue(property, value)
+
+    companion object {
+        /**
+         * 通过id查找class
+         * @since 1.0
+         * @param clazz 类名
+         * @param id 主键值
+         */
+        fun <T> find(clazz: Class<T>, id: Int): T {
+
+            // 获取数据库
+            var tableName = clazz.simpleName
+            val isClassAnnotation = clazz.isAnnotation
+            if (!isClassAnnotation) {
+                val annotations = clazz.annotations
+                for (annotation in annotations) {
+                    val matches = Pattern.matches("@annotation\\.Entity?.*", annotation.toString())
+                    if (matches) {
+                        tableName = annotation.toString().substringBeforeLast(")").substringAfterLast("=")
                     }
-                    "VARCHAR" -> {
-                        val value = rs.getString(property)
-                        this.changePropertyValue(property, value)
-                    }
-                    //todo 完成其他类型转换
                 }
-
             }
-        }
 
-        JDBCUtils.closeConnection()
-        return this
+            val fields = clazz.declaredFields
+
+            val sql = StringBuffer("select ")
+            for (f in fields) {
+                sql.append(f.toString().substringAfterLast(".") + ",")
+            }
+            sql.deleteCharAt(sql.length - 1).append(" from $tableName where $id = ?")
+            val connection = JDBCUtils.getConnection()
+            val ps = connection.prepareStatement(sql.toString())
+            ps.setInt(1, id)
+            val rs = ps.executeQuery()
+            val c = Class.forName(clazz.name).getConstructor().newInstance()
+            while (rs.next()) {
+                for (i in 0 until fields.size) {
+                    val property = rs.metaData.getColumnLabel(i + 1)
+                    val columnType = rs.metaData.getColumnTypeName(i + 1)
+                    when (columnType) {
+                        "INT" -> {
+                            val value = rs.getInt(property)
+                            c.changePropertyValue(property, value)
+                        }
+                        "VARCHAR" -> {
+                            val value = rs.getString(property)
+                            c.changePropertyValue(property, value)
+                        }
+                    //todo 完成其他类型转换
+                    }
+
+                }
+            }
+
+            JDBCUtils.closeConnection()
+            return (c as T)
+
+        }
     }
 
 }

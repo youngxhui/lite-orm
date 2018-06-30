@@ -2,16 +2,16 @@
 
 <c3p0-config>
     <default-config>
-        <property name="jdbcUrl">jdbc:mysql://localhost:3306/eva</property>
-        <property name="driverClass">com.mysql.jdbc.Driver</property>
+        <property name="jdbcUrl">jdbc:mysql://localhost:3306/eva?useSSL=false</property>
+        <property name="driverClass">com.mysql.cj.jdbc.Driver</property>
         <property name="user">root</property>
         <property name="password">1234</property>
-        <property name="checkoutTimeout">30000</property>
-        <property name="idleConnectionTestPeriod">30</property>
-        <property name="initialPoolSize">10</property>
+        <property name="checkoutTimeout">50000</property>
+        <property name="idleConnectionTestPeriod">3</property>
+        <property name="initialPoolSize">2</property>
         <property name="maxIdleTime">30</property>
-        <property name="maxPoolSize">100</property>
-        <property name="minPoolSize">10</property>
-        <property name="maxStatements">200</property>
+        <property name="maxPoolSize">5</property>
+        <property name="minPoolSize">1</property>
+        <property name="maxStatements">2</property>
     </default-config>
 </c3p0-config>
