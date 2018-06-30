@@ -52,11 +52,6 @@ open class LiteOrmSupport {
             }
         }
 
-        // 获取属性值
-        val attributes = ArrayList<String>()
-        for (i in 0 until fields.size) {
-            attributes.add(fields[i].toString().substringAfterLast("."))
-        }
         // 获取连接
         val connection = JDBCUtils.getConnection()
         tableInfo.primaryKey = primaryKey
@@ -109,7 +104,75 @@ open class LiteOrmSupport {
     }
 
     fun update() {
+        var primaryKey = "id"
+        var tableName = this::class.simpleName!!
+        val isClassAnnotation = this::class.java.isAnnotation
+        if (!isClassAnnotation) {
+            val annotations = this::class.annotations
+            for (annotation in annotations) {
+                val matches = Pattern.matches("@annotation\\.Entity?.*", annotation.toString())
+                if (matches) {
+                    tableName = annotation.toString().substringBeforeLast(")").substringAfterLast("=")
+                }
+            }
+        }
 
+        val fields = this::class.java.declaredFields
+        for (f in fields) {
+            val annotationPresent = f.isAnnotationPresent(PrimaryKey::class.java)
+            if (annotationPresent) {
+                val annotation = f.getAnnotation(PrimaryKey::class.java)
+                val matches = Pattern.matches("@annotation.PrimaryKey\\(\\)", annotation.toString())
+                if (matches) {
+                    primaryKey = f.toString().substringAfterLast(".")
+                }
+            }
+        }
+        val connection = JDBCUtils.getConnection()
+        val sql =StringBuffer("update $tableName set ")
+
+
+        for (i in 0 until fields.size - 1) {
+            if (fields[i].toString().substringAfterLast(".") == primaryKey) {
+                continue
+            }
+            sql.append(fields[i].toString().substringAfterLast(".") + "= ?,")
+        }
+        sql.append(fields[fields.size - 1].toString().substringAfterLast(".") + "= ? where $primaryKey = ?;")
+        val ps = connection.prepareStatement(sql.toString())
+
+
+        for (i in 0 until fields.size) {
+            val type = fields[i].type.name.substringAfterLast(".")
+
+            val value = this.getPropertyValue(fields[i].toString().substringAfterLast(".")).toString()
+
+
+            if (fields[i].toString().substringAfterLast(".") == primaryKey) {
+                ps.setInt(fields.size, value.toInt())
+            } else {
+
+                //todo 完成其他类型转换
+                when (type) {
+                    "String" -> ps.setString(i, value)
+
+                    "int" -> ps.setInt(i, value.toInt())
+
+                    "long" -> ps.setLong(i, value.toLong())
+
+                    "float" -> ps.setFloat(i, value.toFloat())
+
+                    "double" -> ps.setDouble(i, value.toDouble())
+
+                    "byte" -> ps.setByte(i, value.toByte())
+
+                }
+
+            }
+        }
+
+        ps.executeUpdate()
+        JDBCUtils.closeConnection()
     }
 
     /**

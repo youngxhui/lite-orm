@@ -12,9 +12,9 @@ class TestLiteOrmSupport {
 
     init {
 
-        person.name = "张三"
+        person.name = "zs"
         person.age = "18"
-        person.sex = "男"
+        person.sex = "n"
         person.ids = 1
     }
 
@@ -35,6 +35,13 @@ class TestLiteOrmSupport {
     fun testFind() {
         val person = LiteOrmSupport.find(Person::class.java, 1)
         println(person.toString())
+    }
+
+    @Test
+    fun testUpdate() {
+
+        person.age="20"
+        person.update()
     }
 }
 
